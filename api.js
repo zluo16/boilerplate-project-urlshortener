@@ -11,16 +11,21 @@ router.get("/hello", function (req, res) {
 // Post url
 router.post("/shorturl/new/", function(req, res) {
   let original_url = req.body.url;
-  let short_url = Url.findLastAvailableNumber();
-  dns.lookup(original_url, function(err) {
-    if (err) res.json({ error: 'invalid URL' });
-  });
-  let url = new Url({ original_url, short_url });
-  url.save(function(err, url) {
-    let original_url = url.original_url;
-    let short_url = url.short_url;
+  Url.findOne()
+    .sort('-short_url')
+    .exec(function(err, url) {
     if (err) res.json(err);
-    res.json({ original_url, short_url });
+    let short_url = url.short_url + 1;
+    let originalNoProtocol = original_url.split('//')[1];
+    dns.lookup(originalNoProtocol, function(err) {
+      if (err) res.json({ error: 'invalid URL' });
+      let newUrl = new Url({ original_url, short_url });
+      newUrl.save(function(err, url) {
+        if (err) res.json(err);
+        let short_url = url.short_url;
+        res.redirect(`/api/shorturl/get/${short_url}`);
+      });
+    });
   });
 });
 
@@ -28,9 +33,20 @@ router.post("/shorturl/new/", function(req, res) {
 router.get("/shorturl/:short_url", function(req, res) {
   let short_url = req.params.short_url;
   Url.findOne({ short_url }, function(err, url) {
-    if (err) res.json(err)
+    if (err) res.json(err);
     res.writeHead(301, { Location: url.original_url });
     res.end();
+  });
+});
+
+// Get short url information
+router.get("/shorturl/get/:short_url", function (req, res) {
+  let short_url = parseInt(req.params.short_url);
+  Url.findOne({ short_url }, function (err, url) {
+    if (err) res.json(err);
+    let original_url = url.original_url;
+    let short_url = url.short_url;
+    res.json({ original_url, short_url });
   });
 });
 
