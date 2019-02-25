@@ -24,24 +24,13 @@ router.post("/shorturl/new/", function(req, res) {
   });
 });
 
-// Get url data
-router.get("/shorturl/:id", function(req, res) {
-  Url.findById(req.params.id, function(err, url) {
-    if (err) res.json(err);
-    let original_url = url.original_url;
-    let short_url = url.short_url;
-    res.json({ original_url, short_url });
-  });
-});
-
 // Redirect to shortcut url
 router.get("/shorturl/:short_url", function(req, res) {
   let short_url = req.params.short_url;
   Url.findOne({ short_url }, function(err, url) {
     if (err) res.json(err)
-    console.log(url);
-    res.json(url);
-    // res.writeHead(301, { Location: url.original_url });
+    res.writeHead(301, { Location: url.original_url });
+    res.end();
   });
 });
 
